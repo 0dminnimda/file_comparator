@@ -12,7 +12,7 @@
 
 #define BUFFER_SIZE 128 * 1024
 #define MIN_BYTES_BETWEEN_PROGRESS BUFFER_SIZE * 8 * 8  // every 8MiB
-#define FRACTION_COUNT 150
+#define FRACTION_COUNT 50
 
 int main(int argc, char *argv[]) {
     if (argc != 3) {
@@ -34,25 +34,31 @@ int main(int argc, char *argv[]) {
     }
 
     fseek(file1, 0, SEEK_END);
-    long size1 = ftell(file1);
-    rewind(file1);
+    fpos_t size1 = 0;
+    if (fgetpos(file1, &size1)) {
+        printf("Warning: Size of file '%s' is unknown\n", argv[1]);
+    }
+    fseek(file1, 0, SEEK_SET) ;
 
     fseek(file2, 0, SEEK_END);
-    long size2 = ftell(file2);
-    rewind(file2);
+    fpos_t size2 = 0;
+    if (fgetpos(file2, &size2)) {
+        printf("Warning: Size of file '%s' is unknown\n", argv[2]);
+    }
+    fseek(file2, 0, SEEK_SET);
 
     if (size1 != size2) {
-        printf("Warning: File sizes differ.\n");
+        printf("Warning: File sizes differ %zu != %zu.\n", size1, size2);
     }
 
-    size_t total_size = min(size1, size2);
+    fpos_t total_size = min(size1, size2);
 
     int differences = 0;
 
     char *buffer1 = malloc(BUFFER_SIZE);
     char *buffer2 = malloc(BUFFER_SIZE);
-    size_t pos = 0;
-    size_t last_pos = -MIN_BYTES_BETWEEN_PROGRESS;
+    fpos_t pos = 0;
+    fpos_t last_pos = 0;
 
     char progress_str[FRACTION_COUNT];
     memset(progress_str, ' ', FRACTION_COUNT);
@@ -62,12 +68,13 @@ int main(int argc, char *argv[]) {
         if (pos == 0 || pos - last_pos > MIN_BYTES_BETWEEN_PROGRESS) {
             last_pos = pos;
 
-            size_t fraction = ((double)pos / total_size * FRACTION_COUNT);
-            for (size_t i = last_progress; i < fraction; ++i) {
+            double fraction_f = ((double)pos / total_size * FRACTION_COUNT);
+            size_t fraction_i = fraction_f;
+            for (size_t i = last_progress; i < fraction_i; ++i) {
                 progress_str[i] = '#';
             }
 
-            printf("\rProgress: [%.*s] (%zu/%zu)", FRACTION_COUNT, progress_str, pos, total_size);
+            printf("\rProgress: [%.*s] %.2lf%% (%zu/%zu)", FRACTION_COUNT, progress_str, fraction_f, pos, total_size);
             fflush(stdout); // Ensure the progress bar is displayed correctly
         }
 
@@ -85,6 +92,7 @@ int main(int argc, char *argv[]) {
         pos += read;
     }
 
+    printf("\n");  // move to new line after progress
     printf("Number of differences found: %d\n", differences);
 
     free(buffer1);
