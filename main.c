@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
                 progress_str[i] = '#';
             }
 
-            printf("\rProgress: [%.*s] %.2lf%% (%zu/%zu)", FRACTION_COUNT, progress_str, fraction_f, pos, total_size);
+            printf("\rProgress: [%.*s] %.2lf%% (%zu/%zu)", FRACTION_COUNT, progress_str, fraction_f * (100 / FRACTION_COUNT), pos, total_size);
             fflush(stdout); // Ensure the progress bar is displayed correctly
         }
 
