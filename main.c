@@ -14,6 +14,22 @@
 #define MIN_BYTES_BETWEEN_PROGRESS BUFFER_SIZE * 8 * 8  // every 8MiB
 #define FRACTION_COUNT 50
 
+void report_progress(fpos_t pos, fpos_t *last_pos, fpos_t total_size, char *progress_str) {
+    if (pos == 0 || pos - *last_pos > MIN_BYTES_BETWEEN_PROGRESS) {
+        *last_pos = pos;
+
+        double fraction_f = ((double)pos / total_size * FRACTION_COUNT);
+        size_t fraction_i = fraction_f;
+        for (size_t i = 0; i < fraction_i; ++i) {
+            progress_str[i] = '#';
+        }
+
+        printf("\rProgress: [%.*s] %.2lf%% (%zu/%zu)", FRACTION_COUNT, progress_str, fraction_f * (100 / FRACTION_COUNT), pos, total_size);
+        fflush(stdout); // Ensure the progress bar is displayed correctly
+    }
+
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         printf("Usage: %s <file1> <file2>\n", argv[0]);
@@ -62,21 +78,9 @@ int main(int argc, char *argv[]) {
 
     char progress_str[FRACTION_COUNT];
     memset(progress_str, ' ', FRACTION_COUNT);
-    size_t last_progress = 0;
 
     while (!feof(file1) && !feof(file2)) {
-        if (pos == 0 || pos - last_pos > MIN_BYTES_BETWEEN_PROGRESS) {
-            last_pos = pos;
-
-            double fraction_f = ((double)pos / total_size * FRACTION_COUNT);
-            size_t fraction_i = fraction_f;
-            for (size_t i = last_progress; i < fraction_i; ++i) {
-                progress_str[i] = '#';
-            }
-
-            printf("\rProgress: [%.*s] %.2lf%% (%zu/%zu)", FRACTION_COUNT, progress_str, fraction_f * (100 / FRACTION_COUNT), pos, total_size);
-            fflush(stdout); // Ensure the progress bar is displayed correctly
-        }
+        report_progress(pos, &last_pos, total_size, progress_str);
 
         size_t read1 = fread(buffer1, sizeof(char), BUFFER_SIZE, file1);
         size_t read2 = fread(buffer2, sizeof(char), BUFFER_SIZE, file2);
@@ -92,7 +96,9 @@ int main(int argc, char *argv[]) {
         pos += read;
     }
 
+    report_progress(pos, &last_pos, total_size, progress_str);
     printf("\n");  // move to new line after progress
+ 
     printf("Number of differences found: %d\n", differences);
 
     free(buffer1);
