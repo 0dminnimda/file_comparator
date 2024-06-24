@@ -156,14 +156,19 @@ int compare_via_buffed_fread(const char *file_path_1, const char *file_path_2) {
     return differences > 0;
 }
 
+#define USE_MEMMAP "--use-memmap"
+
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        printf("Usage: %s <file1> <file2>\n", argv[0]);
+    if (argc < 3 || argc > 4) {
+        printf("Usage: %s <file1> <file2> [" USE_MEMMAP "]\n", argv[0]);
         fflush(stdout);
         exit(1);
     }
 
-    return compare_via_buffed_fread(argv[1], argv[2]);
-    // return compare_via_memmap(argv[1], argv[2]);
+    if (argc == 4 && strcmp(USE_MEMMAP, argv[3]) == 0) {
+        return compare_via_memmap(argv[1], argv[2]);
+    } else {
+        return compare_via_buffed_fread(argv[1], argv[2]);
+    }
 }
 
