@@ -134,7 +134,7 @@ int compare_via_buffed_fread(const char *file_path_1, const char *file_path_2) {
 
         for (size_t i = 0; i < read; ++i) {
             if (buffer1[i] != buffer2[i]) {
-                fprintf(stderr, "%.*sDifference found at position %zu: byte 1=%02X, byte 2=%02X\n", reported, "\n", pos, buffer1[i], buffer2[i]);
+                fprintf(stderr, "%.*sDifference found at position %zu: byte 1=%02X, byte 2=%02X\n", reported, "\n", pos + i, buffer1[i], buffer2[i]);
                 differences++;
                 reported = 0;
             }
